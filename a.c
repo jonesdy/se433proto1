@@ -16,6 +16,8 @@
 /*time*/
 #include <time.h>
 
+#include <errno.h>
+
 typedef struct{
 	int s;
 	char c;
@@ -26,14 +28,13 @@ int recurrence;
 struct sockaddr_in bindto;
 time_t starttime;
 
-//FIXME:check for timeout and handle it
 void * listenandprint(void *s){
 	int *sock = s;
 	while(1){
 		char data[1000]={0};
 		
 		int numbytes = recv(*sock, data, 999, 0);
-		if(numbytes == 0 ||time(NULL)-starttime> 20)
+		if(errno == EAGAIN|| errno == EWOULDBLOCK ||numbytes == 0 ||time(NULL)-starttime> 20)
 			return NULL;
 		X *rcvd = (X *)data;
 		rcvd->s = ntohl(rcvd->s);/*unpack endianness*/
