@@ -1,4 +1,6 @@
 all: a.out
+
+nutcat:
 	gcc -g -DUSEREADLINE -lreadline -ltermcap -lpthread socks.c -o nutcat
 noreadline:
 	gcc -g -lpthread socks.c -o nutcat
