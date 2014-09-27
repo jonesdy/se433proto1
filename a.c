@@ -40,7 +40,7 @@
 
 typedef struct{
 	int s;
-	char c;
+//	char c;
 } X;
 
 //globals
@@ -49,7 +49,7 @@ struct sockaddr_in bindto;
 time_t starttime;
 
 void * listenandprint(void *s){
-	int *sock = s;
+	int *sock = (int*)s;
 	while(1){
 		if(time(NULL)-starttime > RUNTIME)
 			return NULL;
@@ -94,7 +94,7 @@ int main(int argc, char *argv[]){
 	starttime = time(NULL);
 	if(argc < ARG_DELAY+1){
 		printf("usage: %s destip (listenip|all) destport listenport txrate\n", argv[0]);
-		return;
+		return 0;
 	}
 	recurrence = atoi(argv[ARG_DELAY]);
 	printf("delay is %d\n", recurrence);
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]){
 
 
 	int sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if(sock < 0){printf("error initializing socket %d", sock);return;}
+	if(sock < 0){printf("error initializing socket %d", sock);return 1;}
 
 	bindto.sin_family = AF_INET;
 	bindto.sin_port = htons(atoi(argv[ARG_SOURCEPORT]));
