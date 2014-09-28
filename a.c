@@ -97,7 +97,11 @@ int main(int argc, char *argv[])
 	printf("delay is %d\n", recurrence);
 
 	int sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if(sock < 0){printf("error initializing socket %d", sock);return 1;}
+	if(sock < 0)
+   {
+      printf("error initializing socket %d", sock);
+      return 1;
+   }
 
 	bindto.sin_family = AF_INET;
 	bindto.sin_port = htons(atoi(argv[ARG_SOURCEPORT]));
