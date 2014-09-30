@@ -61,8 +61,8 @@ void *listenandprint(void *s)
       fd_set waiton;
       FD_ZERO(&waiton);
       FD_SET(*sock, &waiton);
-      //pselect(*sock+1/*what the hell does this argument even do*/, &waiton, NULL, NULL,&timeout, NULL);
-      select(*sock+1/*what the hell does this argument even do*/, &waiton, NULL, NULL,&timeout);
+      //pselect(*sock+1, &waiton, NULL, NULL,&timeout, NULL);
+      select(*sock+1, &waiton, NULL, NULL,&timeout);
       if(FD_ISSET(*sock, &waiton) == 0)
       {
          printf("receive timed out\n");
