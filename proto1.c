@@ -49,20 +49,29 @@ void *listenandprint(void *s)
    {
       if(time(NULL)-starttime > RUNTIME)
       {
+         printf("listening thread quitting\n");
          return NULL;
       }
       char data[sizeof(int32_t)] = {0};
       
-      int numbytes = recv(*sock, data, sizeof(int32_t), 0);
-      if(errno == EAGAIN|| errno == EWOULDBLOCK ||numbytes == 0)
+      //struct timespec timeout = {0};//use this if using pselect
+      struct timeval timeout = {0};//use this if using select
+      timeout.tv_sec = LISTENTIMEOUT;
+
+      fd_set waiton;
+      FD_ZERO(&waiton);
+      FD_SET(*sock, &waiton);
+      //pselect(*sock+1/*what the hell does this argument even do*/, &waiton, NULL, NULL,&timeout, NULL);
+      select(*sock+1/*what the hell does this argument even do*/, &waiton, NULL, NULL,&timeout);
+      if(FD_ISSET(*sock, &waiton) == 0)
       {
-         errno = 0;/*clear error flag so we don't keep continuing*/
+         printf("receive timed out\n");
          continue;
       }
+      int numbytes = recv(*sock, data, sizeof(int32_t), 0);
       int32_t *rcvd = (int32_t *)data;
       *rcvd = ntohl(*rcvd);/*unpack endianness*/
-      printf("\nI am RX and I got a ");
-      printf("%d\n",*rcvd);
+      printf("\x1b[31mI am RX and I got a %d\n\x1b[0m", *rcvd);
    }
 }
 
@@ -74,10 +83,10 @@ void *sendstuff(void *s)
    while(tosend < NUMTOSEND)
    {
       tosend ++;
+      printf("\x1b[32mI am TX and I am going to send a %d\n\x1b[0m", tosend);
       tosend = htonl(tosend);
       sendto(sock, &tosend, sizeof(tosend), 0, (const struct sockaddr *)&bindto, sizeof(bindto));
       tosend = ntohl(tosend);
-      printf("I am TX and I am going to send a %d\n", tosend);
       usleep(recurrence*USPERMS);
    }
    printf("TX is done\n");
@@ -126,9 +135,9 @@ int main(int argc, char *argv[])
    bindto.sin_addr.s_addr = inet_addr(argv[ARG_DESTIP]);
    bindto.sin_port = htons(atoi(argv[ARG_DESTPORT]));
 
-   struct timeval tv={0};
-   tv.tv_sec = LISTENTIMEOUT;
-   setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv));
+   //struct timeval tv={0};
+   //tv.tv_sec = LISTENTIMEOUT;
+   //setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv));
 
    pthread_t listenthread;
    pthread_t sendthread;
