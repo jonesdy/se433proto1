@@ -44,100 +44,100 @@ time_t starttime;
 
 void *listenandprint(void *s)
 {
-	int *sock = (int*)s;
-	while(1)
+   int *sock = (int*)s;
+   while(1)
    {
-		if(time(NULL)-starttime > RUNTIME)
+      if(time(NULL)-starttime > RUNTIME)
       {
-			return NULL;
+         return NULL;
       }
-		char data[sizeof(int32_t)] = {0};
-		
-		int numbytes = recv(*sock, data, sizeof(int32_t), 0);
-		if(errno == EAGAIN|| errno == EWOULDBLOCK ||numbytes == 0)
-		{
-			errno = 0;/*clear error flag so we don't keep continuing*/
-			continue;
-		}
-		int32_t *rcvd = (int32_t *)data;
-		*rcvd = ntohl(*rcvd);/*unpack endianness*/
-		printf("\nI am RX and I got a ");
-		printf("%d\n",*rcvd);
-	}
+      char data[sizeof(int32_t)] = {0};
+      
+      int numbytes = recv(*sock, data, sizeof(int32_t), 0);
+      if(errno == EAGAIN|| errno == EWOULDBLOCK ||numbytes == 0)
+      {
+         errno = 0;/*clear error flag so we don't keep continuing*/
+         continue;
+      }
+      int32_t *rcvd = (int32_t *)data;
+      *rcvd = ntohl(*rcvd);/*unpack endianness*/
+      printf("\nI am RX and I got a ");
+      printf("%d\n",*rcvd);
+   }
 }
 
 void *sendstuff(void *s)
 {
-	sleep(STARTUPTIME);
-	int sock = *(int*)s;
-	int32_t tosend = 0;
-	while(tosend < NUMTOSEND)
+   sleep(STARTUPTIME);
+   int sock = *(int*)s;
+   int32_t tosend = 0;
+   while(tosend < NUMTOSEND)
    {
-		tosend ++;
-		tosend = htonl(tosend);
-		sendto(sock, &tosend, sizeof(tosend), 0, (const struct sockaddr *)&bindto, sizeof(bindto));
-		tosend = ntohl(tosend);
-		printf("I am TX and I am going to send a %d\n", tosend);
-		usleep(recurrence*USPERMS);
-	}
-	printf("TX is done\n");
-	sleep(LISTENTIME);
-	return NULL;
+      tosend ++;
+      tosend = htonl(tosend);
+      sendto(sock, &tosend, sizeof(tosend), 0, (const struct sockaddr *)&bindto, sizeof(bindto));
+      tosend = ntohl(tosend);
+      printf("I am TX and I am going to send a %d\n", tosend);
+      usleep(recurrence*USPERMS);
+   }
+   printf("TX is done\n");
+   sleep(LISTENTIME);
+   return NULL;
 }
 
 int main(int argc, char *argv[])
 {
-	starttime = time(NULL);
-	if(argc < ARG_DELAY+1)
+   starttime = time(NULL);
+   if(argc < ARG_DELAY+1)
    {
-		printf("usage: %s destip (listenip|all) destport listenport txrate\n", argv[0]);
-		return 0;
-	}
-	recurrence = atoi(argv[ARG_DELAY]);
-	printf("delay is %d\n", recurrence);
+      printf("usage: %s destip (listenip|all) destport listenport txrate\n", argv[0]);
+      return 0;
+   }
+   recurrence = atoi(argv[ARG_DELAY]);
+   printf("delay is %d\n", recurrence);
 
-	int sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if(sock < 0)
+   int sock = socket(AF_INET, SOCK_DGRAM, 0);
+   if(sock < 0)
    {
       printf("error initializing socket %d", sock);
       return 1;
    }
 
-	bindto.sin_family = AF_INET;
-	bindto.sin_port = htons(atoi(argv[ARG_SOURCEPORT]));
-	if(strcmp(argv[ARG_SOURCEIP], "all")==0)
-	{
-		printf("binding to all interfaces\n");
-		bindto.sin_addr.s_addr = htonl(INADDR_ANY);
-	}
-	else
+   bindto.sin_family = AF_INET;
+   bindto.sin_port = htons(atoi(argv[ARG_SOURCEPORT]));
+   if(strcmp(argv[ARG_SOURCEIP], "all")==0)
    {
-		bindto.sin_addr.s_addr = inet_addr(argv[ARG_SOURCEIP]);
+      printf("binding to all interfaces\n");
+      bindto.sin_addr.s_addr = htonl(INADDR_ANY);
    }
-	if(bind(sock, (const struct sockaddr *)&bindto, sizeof(bindto)) == 0)
+   else
    {
-		printf("listening on %d\n", atoi(argv[ARG_SOURCEPORT]));
+      bindto.sin_addr.s_addr = inet_addr(argv[ARG_SOURCEIP]);
    }
-	else
+   if(bind(sock, (const struct sockaddr *)&bindto, sizeof(bindto)) == 0)
    {
-		printf("failed to bind %d (is it in use?)\n", atoi(argv[ARG_SOURCEPORT]));
+      printf("listening on %d\n", atoi(argv[ARG_SOURCEPORT]));
    }
-	/*socket is bound so we can now change these to the destination address and socket*/
-	bindto.sin_addr.s_addr = inet_addr(argv[ARG_DESTIP]);
-	bindto.sin_port = htons(atoi(argv[ARG_DESTPORT]));
+   else
+   {
+      printf("failed to bind %d (is it in use?)\n", atoi(argv[ARG_SOURCEPORT]));
+   }
+   /*socket is bound so we can now change these to the destination address and socket*/
+   bindto.sin_addr.s_addr = inet_addr(argv[ARG_DESTIP]);
+   bindto.sin_port = htons(atoi(argv[ARG_DESTPORT]));
 
-	struct timeval tv={0};
-	tv.tv_sec = LISTENTIMEOUT;
-	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv));
+   struct timeval tv={0};
+   tv.tv_sec = LISTENTIMEOUT;
+   setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv));
 
-	pthread_t listenthread;
-	pthread_t sendthread;
+   pthread_t listenthread;
+   pthread_t sendthread;
 
-	pthread_create(&listenthread, NULL, &listenandprint, (void*)&sock);
-	pthread_create(&sendthread, NULL, &sendstuff, (void*)&sock);
+   pthread_create(&listenthread, NULL, &listenandprint, (void*)&sock);
+   pthread_create(&sendthread, NULL, &sendstuff, (void*)&sock);
 
-	pthread_join(listenthread, NULL);
-	pthread_join(sendthread, NULL);
-	printf("closing socket\n");
-	close(sock);
+   pthread_join(listenthread, NULL);
+   pthread_join(sendthread, NULL);
+   printf("closing socket\n");
+   close(sock);
 }
