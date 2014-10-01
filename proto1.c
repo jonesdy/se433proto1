@@ -65,13 +65,13 @@ void *listenandprint(void *s)
       select(*sock+1, &waiton, NULL, NULL,&timeout);
       if(FD_ISSET(*sock, &waiton) == 0)
       {
-         printf("receive timed out\n");
+         printf("received timed out\n");
          continue;
       }
       int numbytes = recv(*sock, data, sizeof(int32_t), 0);
       int32_t *rcvd = (int32_t *)data;
       *rcvd = ntohl(*rcvd);/*unpack endianness*/
-      printf("\x1b[31mI am RX and I got a %d\n\x1b[0m", *rcvd);
+      printf("I am RX and I got a %d\n", *rcvd);
    }
 }
 
@@ -83,7 +83,7 @@ void *sendstuff(void *s)
    while(tosend < NUMTOSEND)
    {
       tosend ++;
-      printf("\x1b[32mI am TX and I am going to send a %d\n\x1b[0m", tosend);
+      printf("I am TX and I am going to send a %d\n", tosend);
       tosend = htonl(tosend);
       sendto(sock, &tosend, sizeof(tosend), 0, (const struct sockaddr *)&bindto, sizeof(bindto));
       tosend = ntohl(tosend);
